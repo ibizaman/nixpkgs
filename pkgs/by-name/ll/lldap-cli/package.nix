@@ -1,56 +1,62 @@
 { lib
 , stdenvNoCC
 , fetchFromGitHub
+, resholve
 
+, bash
+, coreutils
 , curl
+, gnugrep
+, gnused
 , jq
-, makeWrapper
 , lldap
 , util-linux
 }:
 
-stdenvNoCC.mkDerivation (finalAttrs: rec {
-  name = "lldap-cli";
+resholve.mkDerivation rec {
+  pname = "lldap-cli";
+  version = "0-unstable-2024-05-15";
 
   src = fetchFromGitHub {
     owner = "ibizaman";
-    repo = finalAttrs.name;
-    rev = "422f67fbd9d52466591f7260592bbcd8fc09a210";
-    hash = "sha256-LX1g2OKrNI9XityQMW7Ag0O+rrFxWw5jczjDTkDLS+k=";
+    repo = pname;
+    rev = "65c4102ab0b314593d69c02a803a11ba1853978f";
+    hash = "sha256-Ip1FkDrIsphi0GjP805Y8Gii16x7v/fsHtDUOzxie0w=";
   };
 
-  nativeBuildInputs = [
-    makeWrapper
-  ];
-
-  buildInputs = [
-    curl
-    jq
-  ];
+  solutions = {
+    default = {
+      scripts = [ "bin/lldap-cli" ];
+      interpreter = lib.getExe bash;
+      inputs = [
+        coreutils
+        curl
+        gnugrep
+        gnused
+        jq
+        lldap
+        util-linux
+      ];
+      keep = {
+        "$value" = true;
+      };
+    };
+  };
 
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/lldap-cli
-    mkdir -p $out/bin
-
-    cp lldap-cli $out/bin
-    chmod +x $out/bin/lldap-cli
-
-    substituteInPlace $out/bin/lldap-cli --replace "curl" "${curl}/bin/curl"
-    substituteInPlace $out/bin/lldap-cli --replace "jq" "${jq}/bin/jq"
-    substituteInPlace $out/bin/lldap-cli --replace "column" "${util-linux}/bin/column"
-    substituteInPlace $out/bin/lldap-cli --replace "lldap_set_password" "${lldap}/bin/lldap_set_password"
+    install -Dm555 $src/lldap-cli $out/bin/lldap-cli
 
     runHook postInstall
   '';
 
   meta = {
-    description = "LLDAP-CLI is a command line interface for LLDAP.";
-    homepage = "https://github.com/Zepmann/lldap-cli";
+    description = "Command line interface for LLDAP";
+    homepage = "https://github.com/ibizaman/lldap-cli";
     license = lib.licenses.gpl3;
     mainProgram = "lldap-cli";
     maintainers = with lib.maintainers; [ ibizaman ];
     platforms = lib.platforms.all;
   };
-})
+}
